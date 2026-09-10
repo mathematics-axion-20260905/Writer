@@ -18,6 +18,7 @@ class ScientificPaper(models.Model):
     document_kind = models.CharField(max_length=50, choices=DOCUMENT_KIND_CHOICES, default="paper")
     branding_enabled = models.BooleanField(default=True)
     branding_label = models.CharField(max_length=160, blank=True, default="Powered by MathSphere Writer")
+    scientific_object_references = models.JSONField(default=list, blank=True)
     article = models.OneToOneField(
         "application.Article",
         on_delete=models.SET_NULL,

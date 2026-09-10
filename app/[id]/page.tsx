@@ -16,6 +16,7 @@ export default function EditPaperPage() {
     const [formData, setFormData] = useState<PaperFormData>({
         title: "", abstract: "", content: "", authors: "", keywords: "", document_kind: "paper",
         branding_enabled: true, branding_label: "Powered by MathSphere Writer", status: "draft", sections: [],
+        scientific_object_references: [],
     });
     const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
     const [errorMessage, setErrorMessage] = useState("");
@@ -29,6 +30,7 @@ export default function EditPaperPage() {
                     keywords: data.keywords || "", document_kind: data.document_kind || "paper", branding_enabled: data.branding_enabled ?? true,
                     branding_label: data.branding_label || "Powered by MathSphere Writer", status: data.status || "draft",
                     sections: Array.isArray(data.sections) ? data.sections : [],
+                    scientific_object_references: Array.isArray(data.scientific_object_references) ? data.scientific_object_references : [],
                 });
             } catch (error) {
                 console.error("Xatolik:", error);

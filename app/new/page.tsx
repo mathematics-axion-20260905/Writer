@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { PaperEditorWorkspace, type PaperFormData } from "@/components/paper-editor-workspace";
-import { getLocalScientificObject } from "@/lib/ecosystem/local-object-store";
+import { createLocalScientificReference, getLocalScientificObject } from "@/lib/ecosystem/local-object-store";
 import { readQueuedWriterImport, removeQueuedWriterImport, serializeWriterBridgeBlock } from "@/lib/live-writer-bridge";
 import { createWriterPaper } from "@/lib/writer-api";
 import { compileWriterProjectSections } from "@/lib/writer-project";
@@ -49,7 +49,7 @@ function NewPaperPageContent() {
         if (source === "project" && objectId) {
             importedFromSource.current = true;
             void getLocalScientificObject(objectId)
-                .then((object) => {
+                .then(async (object) => {
                     if (!object?.revision?.payload || typeof object.revision.payload !== "object") {
                         setErrorMessage("Project result could not be opened on this device.");
                         return;
@@ -58,7 +58,26 @@ function NewPaperPageContent() {
                     const markdown = typeof payload.report_markdown === "string" ? payload.report_markdown : "";
                     const summary = typeof payload.summary === "string" ? payload.summary : "";
                     const importedContent = markdown.trim() || summary.trim() || object.title;
-                    setFormData((current) => prependToFirstSection(current, importedContent, object.title, summary));
+                    const reference = {
+                        projectId: object.projectId,
+                        objectId: object.id,
+                        mode: "pinned" as const,
+                        revision: object.currentRevision,
+                    };
+                    await createLocalScientificReference({
+                        projectId: object.projectId,
+                        reference,
+                        containerObjectId: "writer-draft:new-draft",
+                        role: "writer-draft-source",
+                    });
+                    setFormData((current) => ({
+                        ...prependToFirstSection(current, importedContent, object.title, summary),
+                        scientific_object_references: Array.from(
+                            new Map(
+                                [...(current.scientific_object_references ?? []), reference].map((item) => [item.objectId, item]),
+                            ).values(),
+                        ),
+                    }));
                 })
                 .catch(() => setErrorMessage("Project result could not be opened on this device."));
             return;

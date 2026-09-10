@@ -19,6 +19,14 @@ class ScientificPaperApiTests(APITestCase):
                 "status": "published",
                 "branding_enabled": True,
                 "branding_label": "Powered by MathSphere Writer",
+                "scientific_object_references": [
+                    {
+                        "projectId": "project-1",
+                        "objectId": "object-1",
+                        "mode": "pinned",
+                        "revision": 2,
+                    },
+                ],
                 "sections": [
                     {
                         "title": "Introduction",
@@ -50,6 +58,7 @@ class ScientificPaperApiTests(APITestCase):
         self.assertEqual(paper.article.author, paper.authors)
         self.assertTrue(paper.article.is_published)
         self.assertEqual(paper.sections.count(), 2)
+        self.assertEqual(paper.scientific_object_references[0]["objectId"], "object-1")
         self.assertEqual(paper.sections.order_by("order").first().progress_state, "drafting")
         self.assertIn("## Introduction", paper.content)
         self.assertIn("_Powered by MathSphere Writer_", paper.content)

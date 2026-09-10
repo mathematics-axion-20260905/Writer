@@ -4,7 +4,7 @@ import React from "react";
 
 import { AxActionLink, AxBadge, AxEmptyState, AxLoadingState } from "@/components/axion";
 import { getEcosystemHref } from "@/lib/ecosystem/apps";
-import { listLocalScientificObjects } from "@/lib/ecosystem/local-object-store";
+import { importLocalScientificObject, listLocalScientificObjects } from "@/lib/ecosystem/local-object-store";
 import { getLocalProjectTitle, resolveActiveProjectId } from "@/lib/ecosystem/project-context";
 import type { ScientificObject } from "@/lib/ecosystem/contracts";
 
@@ -23,6 +23,17 @@ export default function WriterProjectResultsPage() {
     const [projectTitle, setProjectTitle] = React.useState<string | null>(null);
     const [objects, setObjects] = React.useState<ScientificObject[]>([]);
     const [loading, setLoading] = React.useState(true);
+    const [transferMessage, setTransferMessage] = React.useState<string | null>(null);
+    const importInputRef = React.useRef<HTMLInputElement>(null);
+
+    const refreshObjects = React.useCallback((activeProjectId: string | null) => {
+        if (!activeProjectId) return Promise.resolve();
+        setLoading(true);
+        return listLocalScientificObjects(activeProjectId)
+            .then((items) => setObjects(items.filter((item) => item.sourceApp === "math")))
+            .catch(() => setObjects([]))
+            .finally(() => setLoading(false));
+    }, []);
 
     React.useEffect(() => {
         const activeProjectId = resolveActiveProjectId();
@@ -32,11 +43,8 @@ export default function WriterProjectResultsPage() {
             setLoading(false);
             return;
         }
-        listLocalScientificObjects(activeProjectId)
-            .then((items) => setObjects(items.filter((item) => item.sourceApp === "math")))
-            .catch(() => setObjects([]))
-            .finally(() => setLoading(false));
-    }, []);
+        void refreshObjects(activeProjectId);
+    }, [refreshObjects]);
 
     return (
         <div className="ax-workspace-root min-h-[calc(100vh-28px)]">
@@ -47,6 +55,20 @@ export default function WriterProjectResultsPage() {
                         <span className="min-w-0 leading-none"><span className="block truncate font-serif text-[19px] font-medium tracking-[-0.03em]">Axion Writer</span><span className="mt-1 block text-[8px] font-semibold uppercase tracking-[0.2em] text-[var(--ax-text-faint)]">Project evidence</span></span>
                     </a>
                     <nav className="flex items-center gap-1.5" aria-label="Writer">
+                        <input ref={importInputRef} type="file" accept="application/json,.json" className="hidden" onChange={async (event) => {
+                            const file = event.target.files?.[0];
+                            event.target.value = "";
+                            if (!file) return;
+                            try {
+                                const imported = await importLocalScientificObject(await file.text());
+                                setTransferMessage(imported.projectId === projectId ? "Imported" : "Imported into another Project");
+                                await refreshObjects(projectId);
+                            } catch (error) {
+                                setTransferMessage(error instanceof Error ? error.message : "Import failed");
+                            }
+                        }} />
+                        <AxActionLink href="#" variant="quiet" size="sm" onClick={(event) => { event.preventDefault(); importInputRef.current?.click(); }}>Import JSON</AxActionLink>
+                        {transferMessage ? <span className="hidden text-[9px] font-semibold text-[var(--ax-accent)] lg:inline">{transferMessage}</span> : null}
                         <AxActionLink href={projectId ? `/documents?project=${encodeURIComponent(projectId)}` : "/documents"} variant="quiet" size="sm">Documents</AxActionLink>
                         <AxActionLink href={projectId ? `/new?project=${encodeURIComponent(projectId)}` : "/new"} variant="primary" size="sm">New document</AxActionLink>
                     </nav>

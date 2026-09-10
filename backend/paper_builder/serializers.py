@@ -43,6 +43,7 @@ class ScientificPaperSerializer(serializers.ModelSerializer):
             "document_kind",
             "branding_enabled",
             "branding_label",
+            "scientific_object_references",
             "article",
             "created_at",
             "updated_at",
@@ -77,6 +78,26 @@ class ScientificPaperSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"content": "Paper content is too large."})
 
         return attrs
+
+    def validate_scientific_object_references(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("scientific_object_references must be a list.")
+        if len(value) > 200:
+            raise serializers.ValidationError("A paper can reference at most 200 scientific objects.")
+
+        allowed_modes = {"live", "pinned", "frozen"}
+        for index, reference in enumerate(value):
+            if not isinstance(reference, dict):
+                raise serializers.ValidationError(f"Reference {index + 1} must be an object.")
+            if not isinstance(reference.get("projectId"), str) or not reference["projectId"].strip():
+                raise serializers.ValidationError(f"Reference {index + 1} projectId is required.")
+            if not isinstance(reference.get("objectId"), str) or not reference["objectId"].strip():
+                raise serializers.ValidationError(f"Reference {index + 1} objectId is required.")
+            if reference.get("mode") not in allowed_modes:
+                raise serializers.ValidationError(f"Reference {index + 1} mode is invalid.")
+            if "revision" in reference and (not isinstance(reference["revision"], int) or reference["revision"] < 1):
+                raise serializers.ValidationError(f"Reference {index + 1} revision is invalid.")
+        return value
 
     @transaction.atomic
     def create(self, validated_data):

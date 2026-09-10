@@ -10,6 +10,7 @@ import {
     Code2,
     DatabaseZap,
     Eye,
+    ExternalLink,
     FileStack,
     FunctionSquare,
     Heading,
@@ -26,6 +27,7 @@ import {
     ScanText,
     Sigma,
     Sparkles,
+    Unlink2,
 } from "lucide-react";
 
 import { ArticleRichContent } from "@/components/article-rich-content";
@@ -59,6 +61,8 @@ import {
     createWriterRevisionSnapshot,
     type WriterRevisionSnapshot,
 } from "@/lib/writer-intelligence";
+import type { ScientificObjectReference } from "@/lib/ecosystem/contracts";
+import { getLocalScientificObject, resolveLocalScientificReference } from "@/lib/ecosystem/local-object-store";
 
 export type PaperFormData = {
     title: string;
@@ -71,6 +75,7 @@ export type PaperFormData = {
     branding_label: string;
     status: string;
     sections: WriterProjectSection[];
+    scientific_object_references?: ScientificObjectReference[];
 };
 
 type SaveState = "idle" | "submitting" | "success" | "error";
@@ -88,6 +93,17 @@ type OutdatedLabImport = {
     currentRevision: number;
     latest: SavedLaboratoryResult;
     impact: ChangeImpactMap;
+};
+
+type ResolvedScientificReference = {
+    reference: ScientificObjectReference;
+    title?: string;
+    kind?: string;
+    sourceApp?: string;
+    currentRevision?: number;
+    resolvedRevision?: number;
+    contentHash?: string;
+    status: "live" | "pinned" | "outdated" | "missing";
 };
 
 const CONTENT_SYNC_DELAY_MS = 160;
@@ -258,17 +274,13 @@ export function PaperEditorWorkspace({
     const [viewportWidth, setViewportWidth] = useState(() =>
         typeof window !== "undefined" ? window.innerWidth : 1440,
     );
-    const [viewMode, setViewMode] = useState<"split" | "edit" | "preview">(() =>
-        typeof window !== "undefined" && window.innerWidth < 1280 ? "edit" : "split",
-    );
+    const [viewMode, setViewMode] = useState<"split" | "edit" | "preview">("edit");
     const [showMeta, setShowMeta] = useState(true);
     const [showInspector, setShowInspector] = useState(() =>
         typeof window !== "undefined" ? window.innerWidth >= 1280 : true,
     );
     const [inspectorSection, setInspectorSection] = useState<InspectorSection>("navigator");
-    const [previewSyncMode, setPreviewSyncMode] = useState<PreviewSyncMode>(() =>
-        typeof window !== "undefined" && window.innerWidth >= SPLIT_VIEW_BREAKPOINT ? "manual" : "live",
-    );
+    const [previewSyncMode, setPreviewSyncMode] = useState<PreviewSyncMode>("live");
     const latestFormDataRef = useRef(formData);
     const isInternalContentSyncRef = useRef(false);
     const hasAutoSwitchedForPerformanceRef = useRef(false);
@@ -293,6 +305,7 @@ export function PaperEditorWorkspace({
     const [dismissedLabImportKeys, setDismissedLabImportKeys] = useState<Set<string>>(() => new Set());
     const [revisionSnapshots, setRevisionSnapshots] = useState<WriterRevisionSnapshot[]>([]);
     const [selectedSnapshotId, setSelectedSnapshotId] = useState<string | null>(null);
+    const [resolvedScientificReferences, setResolvedScientificReferences] = useState<ResolvedScientificReference[]>([]);
     const latestEditorContentRef = useRef(activeSection?.content ?? "");
     const lastCommittedContentRef = useRef(activeSection?.content ?? "");
 
@@ -349,6 +362,10 @@ export function PaperEditorWorkspace({
     const splitLayoutEnabled = viewMode === "split" && splitViewAvailable;
     const savedResultImports = useMemo(() => extractSavedResultImports(compiledProjectContent), [compiledProjectContent]);
     const savedResultImportSignature = useMemo(() => JSON.stringify(savedResultImports), [savedResultImports]);
+    const scientificObjectReferenceSignature = useMemo(
+        () => JSON.stringify(formData.scientific_object_references ?? []),
+        [formData.scientific_object_references],
+    );
     const snapshotStorageKey = useMemo(
         () => buildWriterSnapshotStorageKey(mode, formData.title, getWriterSectionKey(normalizedSections[0])),
         [formData.title, mode, normalizedSections],
@@ -471,6 +488,69 @@ export function PaperEditorWorkspace({
             cancelled = true;
         };
     }, [dismissedLabImportKeys, savedResultImportSignature, savedResultImports]);
+
+    useEffect(() => {
+        let cancelled = false;
+        const references = formData.scientific_object_references ?? [];
+
+        async function resolveReferences() {
+            const resolved = await Promise.all(
+                references.map(async (reference): Promise<ResolvedScientificReference> => {
+                    try {
+                        const [object, target] = await Promise.all([
+                            getLocalScientificObject(reference.objectId),
+                            resolveLocalScientificReference(reference),
+                        ]);
+
+                        if (!object || !target) {
+                            return { reference, status: "missing" };
+                        }
+
+                        const targetRevision = "provenance" in target ? target : target.revision;
+                        const resolvedRevision = reference.mode === "live"
+                            ? object.currentRevision
+                            : targetRevision && typeof targetRevision.revision === "number"
+                                ? targetRevision.revision
+                                : reference.revision;
+                        const status = reference.mode === "live"
+                            ? "live"
+                            : resolvedRevision === object.currentRevision
+                                ? "pinned"
+                                : "outdated";
+
+                        return {
+                            reference,
+                            title: object.title,
+                            kind: object.kind,
+                            sourceApp: object.sourceApp,
+                            currentRevision: object.currentRevision,
+                            resolvedRevision,
+                            contentHash: targetRevision?.contentHash,
+                            status,
+                        };
+                    } catch {
+                        return { reference, status: "missing" };
+                    }
+                }),
+            );
+
+            if (!cancelled) {
+                setResolvedScientificReferences(resolved);
+            }
+        }
+
+        if (!references.length) {
+            setResolvedScientificReferences([]);
+            return () => {
+                cancelled = true;
+            };
+        }
+
+        void resolveReferences();
+        return () => {
+            cancelled = true;
+        };
+    }, [scientificObjectReferenceSignature]);
 
     useEffect(() => {
         if (typeof window === "undefined") {
@@ -630,6 +710,14 @@ export function PaperEditorWorkspace({
         const next = { ...latestFormDataRef.current, [field]: value };
         latestFormDataRef.current = next;
         onChange(next);
+    }
+
+    function updateScientificObjectReference(objectId: string, patch: Partial<ScientificObjectReference> | null) {
+        const references = latestFormDataRef.current.scientific_object_references ?? [];
+        const nextReferences = patch
+            ? references.map((reference) => reference.objectId === objectId ? { ...reference, ...patch } : reference)
+            : references.filter((reference) => reference.objectId !== objectId);
+        setField("scientific_object_references", nextReferences);
     }
 
     function startSidebarResize() {
@@ -1096,37 +1184,11 @@ export function PaperEditorWorkspace({
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => setViewMode("split")}
-                                                disabled={!splitViewAvailable}
-                                                className={`rounded-full px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${viewMode === "split" ? "bg-accent text-white shadow-sm" : "text-muted-foreground hover:bg-background hover:text-foreground"}`}
-                                            >
-                                                <Layers2 className="inline h-3 w-3 md:mr-1.5" />
-                                                <span>Split</span>
-                                            </button>
-                                            <button
-                                                type="button"
                                                 onClick={() => setViewMode("preview")}
                                                 className={`rounded-full px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] transition-colors ${viewMode === "preview" ? "bg-accent text-white shadow-sm" : "text-muted-foreground hover:bg-background hover:text-foreground"}`}
                                             >
                                                 <Eye className="inline h-3 w-3 md:mr-1.5" />
                                                 <span>Preview</span>
-                                            </button>
-                                        </div>
-
-                                        <div className="site-toolbar-segment">
-                                            <button
-                                                type="button"
-                                                onClick={() => setPreviewSyncMode("live")}
-                                                className={`rounded-full px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] transition-colors ${previewSyncMode === "live" ? "bg-accent text-white shadow-sm" : "text-muted-foreground hover:bg-background hover:text-foreground"}`}
-                                            >
-                                                Live Sync
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setPreviewSyncMode("manual")}
-                                                className={`rounded-full px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] transition-colors ${previewSyncMode === "manual" ? "bg-accent text-white shadow-sm" : "text-muted-foreground hover:bg-background hover:text-foreground"}`}
-                                            >
-                                                Manual Sync
                                             </button>
                                         </div>
 
@@ -1144,6 +1206,17 @@ export function PaperEditorWorkspace({
                                                     {formData.status === "published" ? "Published" : "Draft"}
                                                 </div>
                                                 <div className="space-y-2">
+                                                    <div className="grid grid-cols-3 gap-1 rounded-xl border border-border/60 bg-muted/20 p-1">
+                                                        <button type="button" onClick={() => setViewMode("edit")} className={`rounded-lg px-2 py-2 text-[10px] font-bold ${viewMode === "edit" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>Edit</button>
+                                                        <button type="button" onClick={() => splitViewAvailable && setViewMode("split")} disabled={!splitViewAvailable} className={`rounded-lg px-2 py-2 text-[10px] font-bold disabled:opacity-40 ${viewMode === "split" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>Split</button>
+                                                        <button type="button" onClick={() => setViewMode("preview")} className={`rounded-lg px-2 py-2 text-[10px] font-bold ${viewMode === "preview" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>Preview</button>
+                                                    </div>
+                                                    <div className="flex items-center justify-between rounded-xl border border-border/60 px-3 py-2">
+                                                        <span className="text-[10px] font-semibold text-muted-foreground">Preview sync</span>
+                                                        <button type="button" onClick={() => setPreviewSyncMode((current) => current === "live" ? "manual" : "live")} className="text-[10px] font-bold text-accent">
+                                                            {previewSyncMode === "live" ? "Live" : "Manual"}
+                                                        </button>
+                                                    </div>
                                                     <select
                                                         value={formData.status}
                                                         onChange={(event) => setField("status", event.target.value)}
@@ -1649,6 +1722,84 @@ export function PaperEditorWorkspace({
 
                                 {showMeta && (
                                     <div className="mt-4 space-y-4">
+                                        <div className="rounded-2xl border border-accent/20 bg-accent/5 px-4 py-3">
+                                            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent">Scientific Objects</div>
+                                            <div className="mt-1 text-sm font-semibold text-foreground">
+                                                {formData.scientific_object_references?.length || 0} linked source{formData.scientific_object_references?.length === 1 ? "" : "s"}
+                                            </div>
+                                            {resolvedScientificReferences.length ? (
+                                                <div className="mt-3 space-y-2">
+                                                    {resolvedScientificReferences.map((item) => {
+                                                        const statusLabel = item.status === "outdated"
+                                                            ? "new revision"
+                                                            : item.status === "missing"
+                                                                ? "not on this device"
+                                                                : item.status;
+                                                        const statusTone = item.status === "missing"
+                                                            ? "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+                                                            : item.status === "outdated"
+                                                                ? "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                                                                : "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+                                                        return (
+                                                            <div key={`${item.reference.projectId}:${item.reference.objectId}`} className="rounded-xl border border-border/60 bg-background/70 p-3">
+                                                                <div className="flex items-start justify-between gap-3">
+                                                                    <div className="min-w-0">
+                                                                        <div className="truncate text-sm font-semibold text-foreground">{item.title || item.reference.objectId}</div>
+                                                                        <div className="mt-1 truncate text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                                                                            {item.kind || "scientific object"} · {item.sourceApp || "ecosystem"}
+                                                                        </div>
+                                                                    </div>
+                                                                    <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold ${statusTone}`}>
+                                                                        {statusLabel}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="mt-2 text-[11px] leading-5 text-muted-foreground">
+                                                                    {item.status === "missing"
+                                                                        ? "Import the complete object bundle on this origin to resolve the reference."
+                                                                        : `Object ${item.reference.objectId.slice(0, 8)}… · pinned r${item.resolvedRevision ?? item.reference.revision ?? "?"}${item.currentRevision ? ` · latest r${item.currentRevision}` : ""}`}
+                                                                </div>
+                                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                                    {item.status !== "missing" && item.currentRevision ? (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => updateScientificObjectReference(item.reference.objectId, { mode: "pinned", revision: item.currentRevision })}
+                                                                            className="inline-flex items-center gap-1 rounded-full border border-border/70 px-2.5 py-1 text-[10px] font-semibold text-foreground transition-colors hover:border-accent/50 hover:text-accent"
+                                                                        >
+                                                                            <RefreshCw className="h-3 w-3" />
+                                                                            Pin latest
+                                                                        </button>
+                                                                    ) : null}
+                                                                    {item.status !== "missing" && item.reference.mode !== "live" ? (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => updateScientificObjectReference(item.reference.objectId, { mode: "live", revision: undefined })}
+                                                                            className="inline-flex items-center gap-1 rounded-full border border-border/70 px-2.5 py-1 text-[10px] font-semibold text-foreground transition-colors hover:border-accent/50 hover:text-accent"
+                                                                        >
+                                                                            <ExternalLink className="h-3 w-3" />
+                                                                            Use live
+                                                                        </button>
+                                                                    ) : null}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => updateScientificObjectReference(item.reference.objectId, null)}
+                                                                        className="inline-flex items-center gap-1 rounded-full border border-border/70 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground transition-colors hover:border-rose-500/50 hover:text-rose-600"
+                                                                    >
+                                                                        <Unlink2 className="h-3 w-3" />
+                                                                        Unlink
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <div className="mt-1 text-[11px] text-muted-foreground">
+                                                    {formData.scientific_object_references?.length
+                                                        ? "Resolving linked objects…"
+                                                        : "Math yoki Notebook’dan linked result import qiling."}
+                                                </div>
+                                            )}
+                                        </div>
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
                                                 Mualliflar

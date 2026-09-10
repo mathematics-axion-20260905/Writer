@@ -14,6 +14,7 @@ export type WriterPaperRecord = {
     branding_label: string;
     status: string;
     sections: PaperFormData["sections"];
+    scientific_object_references?: PaperFormData["scientific_object_references"];
     section_count?: number;
     created_at: string;
     updated_at: string;
@@ -34,6 +35,7 @@ async function parseApiError(response: Response) {
 function normalizeWriterPayload(payload: PaperFormData) {
     return {
         ...payload,
+        scientific_object_references: payload.scientific_object_references ?? [],
         sections: payload.sections.map((section, index) => {
             const normalized: Record<string, unknown> = {
                 title: section.title,
