@@ -2,16 +2,14 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth.models import User
-from .models import Article, Book, Course, Category, Tag, Project
+from .models import Article, Book, Course, Category, Tag
 
 class BaseApiTestCase(APITestCase):
     def setUp(self):
         self.admin_user = User.objects.create_superuser(username='admin', password='password123', email='admin@test.com')
         self.regular_user = User.objects.create_user(username='user', password='password123')
-        self.quantum_project = Project.objects.create(name="Quantum Uz", slug="quantum-uz")
-        self.ket_project = Project.objects.create(name="Ket Studio", slug="ket")
-        self.category = Category.objects.create(name="Science", project=self.quantum_project)
-        self.tag = Tag.objects.create(name="Physics", project=self.quantum_project)
+        self.category = Category.objects.create(name="Science")
+        self.tag = Tag.objects.create(name="Physics")
 
 class ArticleApiTests(BaseApiTestCase):
     def test_health_probe(self):
@@ -114,4 +112,3 @@ class DashboardApiTests(BaseApiTestCase):
         self.assertEqual(response.data['articles_count'], 1)
         self.assertEqual(response.data['books_count'], 1)
         self.assertEqual(response.data['courses_count'], 1)
-
