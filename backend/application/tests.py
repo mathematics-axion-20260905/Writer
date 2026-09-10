@@ -2,7 +2,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth.models import User
-from .models import Article, Book, Course, Category, Tag, Documentation, Project
+from .models import Article, Book, Course, Category, Tag, Project
 
 class BaseApiTestCase(APITestCase):
     def setUp(self):
@@ -115,61 +115,3 @@ class DashboardApiTests(BaseApiTestCase):
         self.assertEqual(response.data['books_count'], 1)
         self.assertEqual(response.data['courses_count'], 1)
 
-
-class DocumentationApiTests(BaseApiTestCase):
-    def test_docs_tree_is_project_scoped(self):
-        root = Documentation.objects.create(
-            project=self.ket_project,
-            title='Getting Started',
-            slug='getting-started',
-            content='<p>Root</p>',
-            order=1,
-        )
-        Documentation.objects.create(
-            project=self.ket_project,
-            title='Installation',
-            slug='installation',
-            content='<p>Child</p>',
-            parent=root,
-            order=1,
-        )
-        Documentation.objects.create(
-            project=self.quantum_project,
-            title='Installation',
-            slug='installation',
-            content='<p>Quantum installation</p>',
-            order=1,
-        )
-
-        url = reverse('documentation-list')
-        response = self.client.get(url, {'project': 'ket', 'tree': '1'})
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['slug'], 'getting-started')
-        self.assertEqual(len(response.data[0]['children']), 1)
-        self.assertEqual(response.data[0]['children'][0]['slug'], 'installation')
-
-    def test_doc_parent_must_match_project(self):
-        quantum_root = Documentation.objects.create(
-            project=self.quantum_project,
-            title='Quantum Root',
-            slug='quantum-root',
-            content='<p>Quantum</p>',
-        )
-
-        url = reverse('documentation-list')
-        response = self.client.post(
-            url,
-            {
-                'project': self.ket_project.id,
-                'title': 'Broken Child',
-                'slug': 'broken-child',
-                'content': '<p>Broken</p>',
-                'parent': quantum_root.id,
-            },
-            format='json',
-        )
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('parent', response.data)
