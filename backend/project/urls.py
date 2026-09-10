@@ -9,6 +9,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/', include('application.urls')),
     path('api/builder/', include('paper_builder.urls')),
     path('api/laboratory/', include('laboratory.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
