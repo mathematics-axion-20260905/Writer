@@ -22,6 +22,11 @@ cp .env.example .env.local
 npm run dev
 ```
 
+For a deployment where ecosystem apps live on different hosts or ports, use
+`.env.production.example` as the template and set the public API, relay, and
+app URLs before `npm run build`. The values are build-time configuration and
+are intentionally kept out of the repository.
+
 Backend start:
 
 ```bash
