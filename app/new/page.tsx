@@ -4,7 +4,8 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { PaperEditorWorkspace, type PaperFormData } from "@/components/paper-editor-workspace";
-import { createLocalScientificReference, getLocalScientificObject } from "@/lib/ecosystem/local-object-store";
+import { createLocalScientificReference, getLocalScientificObject, importLocalScientificObject } from "@/lib/ecosystem/local-object-store";
+import { discardScientificObjectTransfer, fetchScientificObjectTransfer } from "@/lib/ecosystem/transfer";
 import { readQueuedWriterImport, removeQueuedWriterImport, serializeWriterBridgeBlock } from "@/lib/live-writer-bridge";
 import { createWriterPaper } from "@/lib/writer-api";
 import { compileWriterProjectSections } from "@/lib/writer-project";
@@ -34,6 +35,7 @@ function NewPaperPageContent() {
     const source = searchParams.get("source");
     const importId = searchParams.get("importId") || undefined;
     const objectId = searchParams.get("objectId") || undefined;
+    const transferId = searchParams.get("transferId") || undefined;
     const selectedPreset = getWriterTemplatePreset(presetId);
     const addOnIds = (searchParams.get("addons") || "").split(",").map((item) => item.trim()).filter(Boolean);
     const selectedTemplate = getWriterTemplate(templateId || selectedPreset?.templateId) ?? getDefaultWriterTemplate();
@@ -45,6 +47,44 @@ function NewPaperPageContent() {
 
     useEffect(() => {
         if (importedFromSource.current || typeof window === "undefined") return;
+
+        if (source === "transfer" && transferId) {
+            importedFromSource.current = true;
+            void fetchScientificObjectTransfer(transferId)
+                .then(async (transfer) => {
+                    const object = await importLocalScientificObject(transfer.payload);
+                    await discardScientificObjectTransfer(transferId);
+                    if (!object?.revision?.payload || typeof object.revision.payload !== "object") {
+                        throw new Error("Transferred Scientific Object has no readable payload.");
+                    }
+                    const payload = object.revision.payload as Record<string, unknown>;
+                    const markdown = typeof payload.report_markdown === "string" ? payload.report_markdown : "";
+                    const summary = typeof payload.summary === "string" ? payload.summary : "";
+                    const importedContent = markdown.trim() || summary.trim() || object.title;
+                    const reference = {
+                        projectId: object.projectId,
+                        objectId: object.id,
+                        mode: "pinned" as const,
+                        revision: object.currentRevision,
+                    };
+                    await createLocalScientificReference({
+                        projectId: object.projectId,
+                        reference,
+                        containerObjectId: "writer-draft:new-draft",
+                        role: "writer-draft-source",
+                    });
+                    setFormData((current) => ({
+                        ...prependToFirstSection(current, importedContent, object.title, summary),
+                        scientific_object_references: Array.from(
+                            new Map(
+                                [...(current.scientific_object_references ?? []), reference].map((item) => [item.objectId, item]),
+                            ).values(),
+                        ),
+                    }));
+                })
+                .catch((error) => setErrorMessage(error instanceof Error ? error.message : "Scientific Object transfer failed."));
+            return;
+        }
 
         if (source === "project" && objectId) {
             importedFromSource.current = true;
@@ -97,7 +137,7 @@ function NewPaperPageContent() {
             });
         }, 0);
         return () => window.clearTimeout(timer);
-    }, [importId, objectId, source]);
+    }, [importId, objectId, source, transferId]);
 
     async function handleSubmit(nextData?: PaperFormData) {
         setStatus("submitting");
