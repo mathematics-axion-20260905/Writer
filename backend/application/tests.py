@@ -14,6 +14,11 @@ class BaseApiTestCase(APITestCase):
         self.tag = Tag.objects.create(name="Physics", project=self.quantum_project)
 
 class ArticleApiTests(BaseApiTestCase):
+    def test_health_probe(self):
+        response = self.client.get("/healthz/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["status"], "ok")
+
     def test_create_article(self):
         self.client.force_authenticate(user=self.admin_user)
         url = reverse('article-list')

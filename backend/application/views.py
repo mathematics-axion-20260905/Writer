@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 from django.http import FileResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from datetime import timedelta
@@ -16,6 +17,11 @@ from .serializers import (
     CategorySerializer, TagSerializer, 
     ArticleSerializer, BookSerializer, CourseSerializer, UserSerializer
 )
+
+
+def healthz(request):
+    """Small unauthenticated probe for the service manager and load balancer."""
+    return JsonResponse({"status": "ok", "service": "writer-backend"})
 
 class DashboardStatsAPI(APIView):
     def get(self, request):

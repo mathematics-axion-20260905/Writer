@@ -1,0 +1,15 @@
+[Unit]
+Description=Axion Writer backend
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/projects/Writer/backend
+EnvironmentFile=-/root/projects/Writer/backend/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/root/projects/Writer/backend/.venv/bin/gunicorn project.wsgi:application --bind 0.0.0.0:8008 --workers 2 --timeout 120
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
