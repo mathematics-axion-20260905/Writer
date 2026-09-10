@@ -37,3 +37,8 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 ```
+
+For PostgreSQL systemd deployments, install the versioned
+`ops/axion-writer-postgres-backup.service`,
+`ops/axion-writer-postgres-backup.timer`, and `ops/backup-postgres.sh`; the
+timer creates private, SHA-256-hashed dumps with 14-day retention.
