@@ -63,6 +63,7 @@ import {
 } from "@/lib/writer-intelligence";
 import type { ScientificObjectReference } from "@/lib/ecosystem/contracts";
 import { getLocalScientificObject, resolveLocalScientificReference } from "@/lib/ecosystem/local-object-store";
+import { createClientId } from "@/lib/client-id";
 
 export type PaperFormData = {
     title: string;
@@ -766,7 +767,7 @@ export function PaperEditorWorkspace({
         const nextSections = getSectionsWithCurrentDraft();
         const nextCompiledContent = compileProjectContent(nextSections);
         const snapshot = createWriterRevisionSnapshot({
-            id: crypto.randomUUID(),
+            id: createClientId("revision"),
             label,
             title: latestFormDataRef.current.title,
             abstract: latestFormDataRef.current.abstract,

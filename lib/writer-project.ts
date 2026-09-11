@@ -23,11 +23,7 @@ type WriterProjectCompileOptions = {
 };
 
 function buildTempId() {
-    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-        return crypto.randomUUID();
-    }
-
-    return `section-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    return createClientId("section");
 }
 
 function slugifySectionTitle(value: string) {
@@ -119,3 +115,4 @@ export function ensureWriterProjectSections(project: WriterProjectLike) {
         }),
     ];
 }
+import { createClientId } from "@/lib/client-id";
