@@ -67,6 +67,7 @@ import { createClientId } from "@/lib/client-id";
 
 export type PaperFormData = {
     title: string;
+    project_id?: string | null;
     abstract: string;
     content: string;
     authors: string;

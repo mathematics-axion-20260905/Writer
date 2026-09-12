@@ -35,6 +35,7 @@ class ScientificPaperSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "title",
+            "project_id",
             "slug",
             "abstract",
             "content",

@@ -108,6 +108,21 @@ class ScientificPaperApiTests(APITestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["title"], "Geometry Final")
 
+    def test_list_supports_project_filter_and_round_trips_project_id(self):
+        response = self.client.post(
+            "/api/builder/papers/",
+            {"title": "Project paper", "project_id": "project-a", "content": "Draft"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["project_id"], "project-a")
+        ScientificPaper.objects.create(title="Other paper", project_id="project-b", content="Draft")
+
+        filtered = self.client.get("/api/builder/papers/?project=project-a")
+
+        self.assertEqual(filtered.status_code, status.HTTP_200_OK)
+        self.assertEqual([item["title"] for item in filtered.data], ["Project paper"])
+
 
 class PublicArticleSyncTests(APITestCase):
     def test_synced_article_is_visible_in_public_articles_api(self):

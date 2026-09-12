@@ -5,6 +5,7 @@ import type { PaperFormData } from "@/components/paper-editor-workspace";
 export type WriterPaperRecord = {
     id: number;
     title: string;
+    project_id?: string | null;
     abstract: string;
     content: string;
     authors: string;

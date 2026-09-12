@@ -6,7 +6,7 @@ import { AxActionLink, AxBadge, AxEmptyState, AxLoadingState } from "@/component
 import { getEcosystemHref } from "@/lib/ecosystem/apps";
 import { importLocalScientificObject, listLocalScientificObjects } from "@/lib/ecosystem/local-object-store";
 import { getLocalProjectTitle, resolveActiveProjectId } from "@/lib/ecosystem/project-context";
-import { listRemoteScientificObjects } from "@/lib/ecosystem/remote-object-store";
+import { getRemoteProject, listRemoteScientificObjects } from "@/lib/ecosystem/remote-object-store";
 import type { ScientificObject } from "@/lib/ecosystem/contracts";
 
 function WriterMark() {
@@ -63,6 +63,9 @@ export default function WriterProjectResultsPage() {
             setLoading(false);
             return;
         }
+        void getRemoteProject(activeProjectId)
+            .then((project) => { if (project?.title) setProjectTitle(project.title); })
+            .catch(() => undefined);
         void refreshObjects(activeProjectId);
     }, [refreshObjects]);
 
@@ -100,12 +103,12 @@ export default function WriterProjectResultsPage() {
                     <div>
                         <p className="ax-work-kicker">Project results</p>
                         <h1 className="ax-work-title">{projectTitle || "Active project"}</h1>
-                        <p className="ax-work-lead">Choose a saved scientific result and start a Writer draft from it. Evidence stays linked to the same local Project instead of becoming a detached copy.</p>
+                        <p className="ax-work-lead">Choose a saved scientific result and start a Writer draft from it. Evidence stays linked to the same Project instead of becoming a detached copy.</p>
                     </div>
                     <div className="ax-work-stats">
                         <div className="ax-work-stat"><div className="ax-work-stat-value">{objects.length}</div><div className="ax-work-stat-label">Results</div></div>
                         <div className="ax-work-stat"><div className="ax-work-stat-value">Math</div><div className="ax-work-stat-label">Source</div></div>
-                        <div className="ax-work-stat"><div className="ax-work-stat-value">Local</div><div className="ax-work-stat-label">Context</div></div>
+                        <div className="ax-work-stat"><div className="ax-work-stat-value">Core</div><div className="ax-work-stat-label">Context</div></div>
                     </div>
                 </section>
 
@@ -113,7 +116,7 @@ export default function WriterProjectResultsPage() {
                     {!projectId ? (
                         <AxEmptyState title="No active Project." description="Open Writer from the Science Hub so the document can keep the same research context." />
                     ) : loading ? (
-                        <AxLoadingState label="Loading Project results" detail="Reading saved scientific objects from this device." />
+                        <AxLoadingState label="Loading Project results" detail="Reading saved scientific objects from the ecosystem core." />
                     ) : objects.length ? (
                         <div className="ax-work-list">
                             {objects.map((object, index) => (

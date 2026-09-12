@@ -16,7 +16,7 @@ export default function EditPaperPage() {
     const [formData, setFormData] = useState<PaperFormData>({
         title: "", abstract: "", content: "", authors: "", keywords: "", document_kind: "paper",
         branding_enabled: true, branding_label: "Powered by MathSphere Writer", status: "draft", sections: [],
-        scientific_object_references: [],
+        scientific_object_references: [], project_id: null,
     });
     const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
     const [errorMessage, setErrorMessage] = useState("");
@@ -25,12 +25,14 @@ export default function EditPaperPage() {
         async function fetchPaper() {
             try {
                 const data = await fetchWriterPaper(id);
+                const routeProjectId = new URLSearchParams(window.location.search).get("project");
                 setFormData({
                     title: data.title || "", abstract: data.abstract || "", content: data.content || "", authors: data.authors || "",
                     keywords: data.keywords || "", document_kind: data.document_kind || "paper", branding_enabled: data.branding_enabled ?? true,
                     branding_label: data.branding_label || "Powered by MathSphere Writer", status: data.status || "draft",
                     sections: Array.isArray(data.sections) ? data.sections : [],
                     scientific_object_references: Array.isArray(data.scientific_object_references) ? data.scientific_object_references : [],
+                    project_id: data.project_id || routeProjectId,
                 });
             } catch (error) {
                 console.error("Xatolik:", error);
@@ -46,9 +48,11 @@ export default function EditPaperPage() {
         setStatus("submitting");
         setErrorMessage("");
         try {
-            await updateWriterPaper(id, nextData ?? formData);
+            const current = nextData ?? formData;
+            const projectId = current.project_id || new URLSearchParams(window.location.search).get("project");
+            await updateWriterPaper(id, { ...current, project_id: projectId || null });
             setStatus("success");
-            setTimeout(() => router.push("/documents"), 900);
+            setTimeout(() => router.push(projectId ? `/documents?project=${encodeURIComponent(projectId)}` : "/documents"), 900);
         } catch (error) {
             console.error("Submission error:", error);
             setErrorMessage(error instanceof Error ? error.message : "Tarmoq xatosi. Server bilan bog'lanishda muammo.");

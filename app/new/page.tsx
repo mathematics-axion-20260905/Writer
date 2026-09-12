@@ -7,6 +7,7 @@ import { PaperEditorWorkspace, type PaperFormData } from "@/components/paper-edi
 import { createLocalScientificReference, getLocalScientificObject, importLocalScientificObject } from "@/lib/ecosystem/local-object-store";
 import { discardScientificObjectTransfer, fetchScientificObjectTransfer } from "@/lib/ecosystem/transfer";
 import { getRemoteScientificObject } from "@/lib/ecosystem/remote-object-store";
+import { resolveActiveProjectId } from "@/lib/ecosystem/project-context";
 import { readQueuedWriterImport, removeQueuedWriterImport, serializeWriterBridgeBlock } from "@/lib/live-writer-bridge";
 import { createWriterPaper } from "@/lib/writer-api";
 import { compileWriterProjectSections } from "@/lib/writer-project";
@@ -154,9 +155,11 @@ function NewPaperPageContent() {
         setStatus("submitting");
         setErrorMessage("");
         try {
-            await createWriterPaper(nextData ?? formData);
+            const current = nextData ?? formData;
+            const projectId = resolveActiveProjectId();
+            await createWriterPaper({ ...current, project_id: projectId || current.project_id || null });
             setStatus("success");
-            setTimeout(() => router.push("/documents"), 900);
+            setTimeout(() => router.push(projectId ? `/documents?project=${encodeURIComponent(projectId)}` : "/documents"), 900);
         } catch (error) {
             console.error("Submission error:", error);
             setErrorMessage(error instanceof Error ? error.message : "Tarmoq xatosi. Server bilan bog'lanishda muammo.");

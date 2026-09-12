@@ -10,6 +10,7 @@ class ScientificPaper(models.Model):
     ]
 
     title = models.CharField(max_length=500, blank=True, null=True)
+    project_id = models.CharField(max_length=255, blank=True, null=True, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True, null=True)
     abstract = models.TextField(blank=True, null=True)
     content = models.TextField(blank=True, null=True)

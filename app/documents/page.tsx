@@ -33,12 +33,17 @@ function WriterMark() {
 }
 
 export default function DocumentsPage() {
+    const [projectId, setProjectId] = useState<string | null>(null);
     const [papers, setPapers] = useState<Paper[]>([]);
     const [loading, setLoading] = useState(true);
     const [notice, setNotice] = useState<string | null>(null);
     const [filter, setFilter] = useState<Filter>("all");
     const [query, setQuery] = useState("");
     const [createOpen, setCreateOpen] = useState(false);
+
+    useEffect(() => {
+        setProjectId(new URLSearchParams(window.location.search).get("project"));
+    }, []);
 
     const fetchPapers = useCallback(async () => {
         setLoading(true);
@@ -47,6 +52,7 @@ export default function DocumentsPage() {
             const params = new URLSearchParams();
             if (filter !== "all") params.set("status", filter);
             if (query.trim()) params.set("q", query.trim());
+            if (projectId) params.set("project", projectId);
             const response = await fetchPublic(`/api/builder/papers/?${params.toString()}`);
             if (!response.ok) throw new Error("archive-unavailable");
             setPapers(await response.json());
@@ -58,7 +64,7 @@ export default function DocumentsPage() {
         } finally {
             setLoading(false);
         }
-    }, [filter, query]);
+    }, [filter, projectId, query]);
 
     useEffect(() => {
         const timer = window.setTimeout(() => void fetchPapers(), 260);
@@ -83,7 +89,7 @@ export default function DocumentsPage() {
                         </span>
                     </Link>
                     <div className="flex items-center gap-2">
-                        <Link href="/project" className="hidden px-3 py-2 text-[11px] font-semibold text-[var(--ax-text-soft)] hover:text-[var(--ax-text)] sm:inline-flex">Project results</Link>
+                        <Link href={projectId ? `/project?project=${encodeURIComponent(projectId)}` : "/project"} className="hidden px-3 py-2 text-[11px] font-semibold text-[var(--ax-text-soft)] hover:text-[var(--ax-text)] sm:inline-flex">Project results</Link>
                         <AxButton variant="primary" size="sm" onClick={() => setCreateOpen(true)}><Plus className="h-3.5 w-3.5" />New document</AxButton>
                     </div>
                 </div>
@@ -136,7 +142,7 @@ export default function DocumentsPage() {
                             <div className="ax-work-list">
                                 {papers.map((paper) => (
                                     <article key={paper.id} className="ax-work-row group grid gap-4 px-1 py-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:px-5 lg:px-6">
-                                        <Link href={`/${paper.id}`} className="min-w-0 rounded-[var(--ax-work-control-radius)] outline-none focus-visible:shadow-[var(--ax-focus-ring)]">
+                                        <Link href={`/${paper.id}${projectId ? `?project=${encodeURIComponent(projectId)}` : ""}`} className="min-w-0 rounded-[var(--ax-work-control-radius)] outline-none focus-visible:shadow-[var(--ax-focus-ring)]">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <h2 className="truncate font-serif text-[25px] tracking-[-0.035em]">{paper.title || "Untitled document"}</h2>
                                                 <AxBadge tone={paper.status === "published" ? "success" : "neutral"}>{paper.status === "published" ? "Published" : "Draft"}</AxBadge>

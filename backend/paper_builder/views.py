@@ -47,6 +47,10 @@ class ScientificPaperViewSet(viewsets.ModelViewSet):
         )
         status_value = self.request.query_params.get("status")
         search = self.request.query_params.get("q")
+        project_id = self.request.query_params.get("project")
+
+        if project_id:
+            queryset = queryset.filter(project_id=project_id)
 
         if status_value in {"draft", "published"}:
             queryset = queryset.filter(status=status_value)

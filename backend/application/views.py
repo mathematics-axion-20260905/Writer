@@ -7,6 +7,7 @@ from django.http import FileResponse
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db import connection
 from datetime import timedelta
 from django.db.models import Count
 from django.db.models.functions import TruncDate
@@ -21,6 +22,12 @@ from .serializers import (
 
 def healthz(request):
     """Small unauthenticated probe for the service manager and load balancer."""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+    except Exception:
+        return JsonResponse({"status": "unhealthy", "service": "writer-backend"}, status=503)
     return JsonResponse({"status": "ok", "service": "writer-backend"})
 
 class DashboardStatsAPI(APIView):
