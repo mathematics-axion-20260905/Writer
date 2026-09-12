@@ -6,6 +6,7 @@ import { AxActionLink, AxBadge, AxEmptyState, AxLoadingState } from "@/component
 import { getEcosystemHref } from "@/lib/ecosystem/apps";
 import { importLocalScientificObject, listLocalScientificObjects } from "@/lib/ecosystem/local-object-store";
 import { getLocalProjectTitle, resolveActiveProjectId } from "@/lib/ecosystem/project-context";
+import { listRemoteScientificObjects } from "@/lib/ecosystem/remote-object-store";
 import type { ScientificObject } from "@/lib/ecosystem/contracts";
 
 function WriterMark() {
@@ -30,7 +31,26 @@ export default function WriterProjectResultsPage() {
         if (!activeProjectId) return Promise.resolve();
         setLoading(true);
         return listLocalScientificObjects(activeProjectId)
-            .then((items) => setObjects(items.filter((item) => item.sourceApp === "math")))
+            .then(async (items) => {
+                const merged = new Map(items.map((item) => [item.id, item]));
+                try {
+                    const remote = await listRemoteScientificObjects(activeProjectId);
+                    for (const object of remote) {
+                        if (!merged.has(object.id)) {
+                            try {
+                                await importLocalScientificObject(object.serializedPayload);
+                                const cached = (await listLocalScientificObjects(activeProjectId)).find((item) => item.id === object.id);
+                                merged.set(object.id, cached || object);
+                            } catch {
+                                merged.set(object.id, object);
+                            }
+                        }
+                    }
+                } catch {
+                    // Use the local cache while the core is temporarily offline.
+                }
+                setObjects([...merged.values()].filter((item) => item.sourceApp === "math"));
+            })
             .catch(() => setObjects([]))
             .finally(() => setLoading(false));
     }, []);

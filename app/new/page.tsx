@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { PaperEditorWorkspace, type PaperFormData } from "@/components/paper-editor-workspace";
 import { createLocalScientificReference, getLocalScientificObject, importLocalScientificObject } from "@/lib/ecosystem/local-object-store";
 import { discardScientificObjectTransfer, fetchScientificObjectTransfer } from "@/lib/ecosystem/transfer";
+import { getRemoteScientificObject } from "@/lib/ecosystem/remote-object-store";
 import { readQueuedWriterImport, removeQueuedWriterImport, serializeWriterBridgeBlock } from "@/lib/live-writer-bridge";
 import { createWriterPaper } from "@/lib/writer-api";
 import { compileWriterProjectSections } from "@/lib/writer-project";
@@ -90,6 +91,16 @@ function NewPaperPageContent() {
             importedFromSource.current = true;
             void getLocalScientificObject(objectId)
                 .then(async (object) => {
+                    if (!object) {
+                        const remote = await getRemoteScientificObject(objectId);
+                        if (remote?.serializedPayload) {
+                            try {
+                                object = await importLocalScientificObject(remote.serializedPayload);
+                            } catch {
+                                object = remote;
+                            }
+                        }
+                    }
                     if (!object?.revision?.payload || typeof object.revision.payload !== "object") {
                         setErrorMessage("Project result could not be opened on this device.");
                         return;
