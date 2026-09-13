@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 
 import { AxActionLink, AxBadge, AxEmptyState, AxLoadingState } from "@/components/axion";
 import { getEcosystemHref } from "@/lib/ecosystem/apps";
@@ -73,10 +74,10 @@ export default function WriterProjectResultsPage() {
         <div className="ax-workspace-root min-h-[calc(100vh-28px)]">
             <header className="ax-work-subnav sticky top-0 z-40">
                 <div className="ax-work-container flex h-16 items-center justify-between gap-5">
-                    <a href="/" className="flex min-w-0 items-center gap-3 rounded-[var(--ax-work-control-radius)] outline-none focus-visible:shadow-[var(--ax-focus-ring)]">
+                    <Link href="/" className="flex min-w-0 items-center gap-3 rounded-[var(--ax-work-control-radius)] outline-none focus-visible:shadow-[var(--ax-focus-ring)]">
                         <WriterMark />
                         <span className="min-w-0 leading-none"><span className="block truncate font-serif text-[19px] font-medium tracking-[-0.03em]">Axion Writer</span><span className="mt-1 block text-[8px] font-semibold uppercase tracking-[0.2em] text-[var(--ax-text-faint)]">Project evidence</span></span>
-                    </a>
+                    </Link>
                     <nav className="flex items-center gap-1.5" aria-label="Writer">
                         <input ref={importInputRef} type="file" accept="application/json,.json" className="hidden" onChange={async (event) => {
                             const file = event.target.files?.[0];

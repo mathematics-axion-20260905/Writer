@@ -9,18 +9,19 @@ import "@/styles/axion-writer-chrome.css";
 import "@/styles/axion-premium-workspace.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { EcosystemBar } from "@/components/ecosystem/ecosystem-bar";
+import { siteJsonLd, siteMetadata } from "@/lib/seo";
 
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-inter" });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
 
-export const metadata: Metadata = {
-    title: "Writer | Axion Science",
-    description: "Scientific writing and publication workspace connected to Axion Science projects and evidence.",
-};
+export const metadata: Metadata = siteMetadata;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
     return (
         <html lang="uz" suppressHydrationWarning>
+            <head>
+                <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }} />
+            </head>
             <body className={`${manrope.variable} ${playfair.variable} min-h-screen`}>
                 <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
                     <EcosystemBar currentApp="writer" />
