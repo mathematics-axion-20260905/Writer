@@ -64,6 +64,7 @@ import {
 import type { ScientificObjectReference } from "@/lib/ecosystem/contracts";
 import { getLocalScientificObject, resolveLocalScientificReference } from "@/lib/ecosystem/local-object-store";
 import { createClientId } from "@/lib/client-id";
+import { useLocale } from "@/components/locale-provider";
 
 export type PaperFormData = {
     title: string;
@@ -269,6 +270,10 @@ export function PaperEditorWorkspace({
     mode?: "new" | "edit";
     documentId?: string;
 }) {
+    const { locale } = useLocale();
+    const copy = locale === "uz"
+        ? { titlePlaceholder: "Maqola sarlavhasini kiriting…", sidebar: "Yon panel", panels: "Panellar", edit: "Tahrirlash", preview: "Ko‘rib chiqish", split: "Bo‘lingan ko‘rinish", published: "Nashr qilingan", draft: "Qoralama", live: "Avtomatik", manual: "Qo‘lda", sync: "Ko‘rib chiqish sinxronizatsiyasi", ready: "Nashrga tayyor", refresh: "Ko‘rib chiqishni yangilash", exportPdf: "PDF eksporti", save: "Saqlash", saving: "Saqlanmoqda", inspector: "Inspektor", files: "Fayllar", tools: "Asboblar", review: "Ko‘rib chiqish", meta: "Metadata", templates: "Shablonlar", outline: "Tuzilma", editorTools: "Tahrirlash asboblari", insertBlocks: "Blok kiritish", import: "Import qilish", savedUpdates: "Saqlangan natija yangilandi", preflight: "Dastlabki tekshiruv", publicationReadiness: "Nashrga tayyorgarlik", score: "Baholash", references: "Manbalar", noIssues: "Nashrga to‘sqinlik qiluvchi muammo aniqlanmadi.", exportPreflight: "Tekshiruvni eksport qilish", snapshot: "Nusxa yaratish", citationAudit: "Iqtibos auditi", referenceIntegrity: "Manbalar yaxlitligi", snapshotReview: "Nusxani ko‘rib chiqish", restore: "Nusxani tiklash", consistency: "Izchillik tekshiruvlari", documentInfo: "Hujjat ma’lumotlari", scientificObjects: "Scientific Objects", sectionEditor: "Bo‘lim tahrirlagichi", startWriting: "Ilmiy maqolani yozishni boshlang… Bo‘limlar, formulalar, teoremalar va grafik bloklarini shu yerda yozishingiz mumkin." }
+        : { titlePlaceholder: "Enter the manuscript title…", sidebar: "Sidebar", panels: "Panels", edit: "Edit", preview: "Preview", split: "Split view", published: "Published", draft: "Draft", live: "Live", manual: "Manual", sync: "Preview sync", ready: "Ready for publication", refresh: "Refresh preview", exportPdf: "Export PDF", save: "Save", saving: "Saving", inspector: "Inspector", files: "Files", tools: "Tools", review: "Review", meta: "Meta", templates: "Templates", outline: "Outline", editorTools: "Editor tools", insertBlocks: "Insert blocks", import: "Import", savedUpdates: "Saved result updates", preflight: "Preflight", publicationReadiness: "Publication readiness", score: "Score", references: "References", noIssues: "No blocking publication issues detected.", exportPreflight: "Export preflight", snapshot: "Create snapshot", citationAudit: "Citation audit", referenceIntegrity: "Reference integrity", snapshotReview: "Snapshot review", restore: "Restore snapshot", consistency: "Consistency checks", documentInfo: "Document info", scientificObjects: "Scientific Objects", sectionEditor: "Section Editor", startWriting: "Start writing the scientific manuscript… Sections, equations, theorems and plot blocks can be written here." };
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const workspaceShellRef = useRef<HTMLDivElement>(null);
     const splitWorkspaceRef = useRef<HTMLDivElement>(null);
@@ -1159,7 +1164,7 @@ export function PaperEditorWorkspace({
                                             value={formData.title}
                                             onChange={(event) => setField("title", event.target.value)}
                                             className="h-9 w-full rounded-2xl bg-transparent text-base font-black tracking-tight outline-none placeholder:text-muted-foreground/45 md:text-xl"
-                                            placeholder="Maqola sarlavhasini kiriting..."
+                                            placeholder={copy.titlePlaceholder}
                                         />
                                     </div>
                                 </div>
@@ -1172,7 +1177,7 @@ export function PaperEditorWorkspace({
                                             className="site-toolbar-pill h-9 px-3 text-[11px]"
                                         >
                                             {showInspector ? <PanelLeftClose className="h-3.5 w-3.5" /> : <PanelLeftOpen className="h-3.5 w-3.5" />}
-                                            <span>{showInspector ? "Sidebar" : "Panels"}</span>
+                                            <span>{showInspector ? copy.sidebar : copy.panels}</span>
                                         </button>
 
                                         <div className="site-toolbar-segment">
@@ -1182,7 +1187,7 @@ export function PaperEditorWorkspace({
                                                 className={`rounded-full px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] transition-colors ${viewMode === "edit" ? "bg-accent text-white shadow-sm" : "text-muted-foreground hover:bg-background hover:text-foreground"}`}
                                             >
                                                 <PencilLine className="inline h-3 w-3 md:mr-1.5" />
-                                                <span>Edit</span>
+                                                <span>{copy.edit}</span>
                                             </button>
                                             <button
                                                 type="button"
@@ -1190,7 +1195,7 @@ export function PaperEditorWorkspace({
                                                 className={`rounded-full px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] transition-colors ${viewMode === "preview" ? "bg-accent text-white shadow-sm" : "text-muted-foreground hover:bg-background hover:text-foreground"}`}
                                             >
                                                 <Eye className="inline h-3 w-3 md:mr-1.5" />
-                                                <span>Preview</span>
+                                                <span>{copy.preview}</span>
                                             </button>
                                         </div>
 
@@ -1205,18 +1210,18 @@ export function PaperEditorWorkspace({
                                                     ) : (
                                                         <CircleDashed className="h-3.5 w-3.5" />
                                                     )}
-                                                    {formData.status === "published" ? "Published" : "Draft"}
+                                                    {formData.status === "published" ? copy.published : copy.draft}
                                                 </div>
                                                 <div className="space-y-2">
                                                     <div className="grid grid-cols-3 gap-1 rounded-xl border border-border/60 bg-muted/20 p-1">
-                                                        <button type="button" onClick={() => setViewMode("edit")} className={`rounded-lg px-2 py-2 text-[10px] font-bold ${viewMode === "edit" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>Edit</button>
-                                                        <button type="button" onClick={() => splitViewAvailable && setViewMode("split")} disabled={!splitViewAvailable} className={`rounded-lg px-2 py-2 text-[10px] font-bold disabled:opacity-40 ${viewMode === "split" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>Split</button>
-                                                        <button type="button" onClick={() => setViewMode("preview")} className={`rounded-lg px-2 py-2 text-[10px] font-bold ${viewMode === "preview" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>Preview</button>
+                                                        <button type="button" onClick={() => setViewMode("edit")} className={`rounded-lg px-2 py-2 text-[10px] font-bold ${viewMode === "edit" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>{copy.edit}</button>
+                                                        <button type="button" onClick={() => splitViewAvailable && setViewMode("split")} disabled={!splitViewAvailable} className={`rounded-lg px-2 py-2 text-[10px] font-bold disabled:opacity-40 ${viewMode === "split" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>{copy.split}</button>
+                                                        <button type="button" onClick={() => setViewMode("preview")} className={`rounded-lg px-2 py-2 text-[10px] font-bold ${viewMode === "preview" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>{copy.preview}</button>
                                                     </div>
                                                     <div className="flex items-center justify-between rounded-xl border border-border/60 px-3 py-2">
-                                                        <span className="text-[10px] font-semibold text-muted-foreground">Preview sync</span>
+                                                        <span className="text-[10px] font-semibold text-muted-foreground">{copy.sync}</span>
                                                         <button type="button" onClick={() => setPreviewSyncMode((current) => current === "live" ? "manual" : "live")} className="text-[10px] font-bold text-accent">
-                                                            {previewSyncMode === "live" ? "Live" : "Manual"}
+                                                            {previewSyncMode === "live" ? copy.live : copy.manual}
                                                         </button>
                                                     </div>
                                                     <select
@@ -1232,7 +1237,7 @@ export function PaperEditorWorkspace({
                                                         onClick={refreshPreview}
                                                         className="inline-flex h-9 w-full items-center justify-between rounded-xl border border-border/60 bg-background px-3 text-[11px] font-bold text-foreground transition-colors hover:bg-muted/70"
                                                     >
-                                                        <span>Refresh preview</span>
+                                                        <span>{copy.refresh}</span>
                                                         <RefreshCw className="h-3.5 w-3.5" />
                                                     </button>
                                                     <button
@@ -1240,7 +1245,7 @@ export function PaperEditorWorkspace({
                                                         onClick={handleExportPDF}
                                                         className="inline-flex h-9 w-full items-center justify-between rounded-xl border border-border/60 bg-background px-3 text-[11px] font-bold text-foreground transition-colors hover:bg-muted/70"
                                                     >
-                                                        <span>Export PDF</span>
+                                                        <span>{copy.exportPdf}</span>
                                                         <Printer className="h-3.5 w-3.5" />
                                                     </button>
                                                 </div>
@@ -1256,12 +1261,12 @@ export function PaperEditorWorkspace({
                                             {saveState === "submitting" ? (
                                                 <>
                                                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                                    <span>Saqlanmoqda</span>
+                                                    <span>{copy.saving}</span>
                                                 </>
                                             ) : (
                                                 <>
                                                     <Save className="h-3.5 w-3.5" />
-                                                    <span>Saqlash</span>
+                                                    <span>{copy.save}</span>
                                                 </>
                                             )}
                                         </button>
@@ -1285,7 +1290,7 @@ export function PaperEditorWorkspace({
                             <div className="site-panel-strong p-3">
                                 <div className="mb-2 flex items-center justify-between gap-2">
                                     <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                                        Inspector
+                                        {copy.inspector}
                                     </div>
                                     <div className="site-status-pill px-2.5 py-1 text-[10px] tracking-[0.14em]">
                                         {normalizedSections.length}
@@ -1293,12 +1298,12 @@ export function PaperEditorWorkspace({
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">
                                     {[
-                                        { id: "navigator", label: "Files" },
-                                        { id: "tools", label: "Tools" },
-                                        { id: "review", label: "Review" },
-                                        { id: "metadata", label: "Meta" },
-                                        { id: "templates", label: "Templates" },
-                                        { id: "outline", label: "Outline" },
+                                        { id: "navigator", label: copy.files },
+                                        { id: "tools", label: copy.tools },
+                                        { id: "review", label: copy.review },
+                                        { id: "metadata", label: copy.meta },
+                                        { id: "templates", label: copy.templates },
+                                        { id: "outline", label: copy.outline },
                                     ].map((item) => (
                                         <button
                                             key={item.id}
@@ -1337,9 +1342,9 @@ export function PaperEditorWorkspace({
                                     <div className="mb-4 flex items-center justify-between">
                                         <div>
                                             <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
-                                                Editor tools
+                                                {copy.editorTools}
                                             </div>
-                                            <div className="mt-1 text-lg font-black">Insert blocks</div>
+                                            <div className="mt-1 text-lg font-black">{copy.insertBlocks}</div>
                                         </div>
                                         <PencilLine className="h-5 w-5 text-accent" />
                                     </div>
@@ -1361,7 +1366,7 @@ export function PaperEditorWorkspace({
                                             className="site-toolbar-pill justify-start px-3 py-2 text-[10px] tracking-[0.12em]"
                                         >
                                             <DatabaseZap className="h-3 w-3" />
-                                            Import
+                                            {copy.import}
                                         </button>
                                     </div>
                                     <div className="mt-3">
@@ -1372,7 +1377,7 @@ export function PaperEditorWorkspace({
                                 {outdatedLabImports.length ? (
                                     <div className="site-panel border-amber-400/30 bg-amber-500/10 p-4">
                                         <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-amber-700 dark:text-amber-300">
-                                            Saved result updates
+                                            {copy.savedUpdates}
                                         </div>
                                         <div className="mt-1 text-lg font-black">Lab natijasi yangilangan</div>
                                         <div className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -1555,12 +1560,12 @@ export function PaperEditorWorkspace({
                                     <div className="mb-4 flex items-center justify-between">
                                         <div>
                                             <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
-                                                Preflight
+                                                {copy.preflight}
                                             </div>
-                                            <div className="mt-1 text-lg font-black">Publication readiness</div>
+                                            <div className="mt-1 text-lg font-black">{copy.publicationReadiness}</div>
                                         </div>
                                         <div className={`site-status-pill px-3 py-1 ${intelligenceReport.preflight.status === "ready" ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : intelligenceReport.preflight.status === "review" ? "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300" : "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300"}`}>
-                                            {intelligenceReport.preflight.status}
+                                            {locale === "uz" ? ({ ready: "tayyor", review: "ko‘rib chiqish", blocked: "to‘silgan" } as Record<string, string>)[intelligenceReport.preflight.status] || intelligenceReport.preflight.status : intelligenceReport.preflight.status}
                                         </div>
                                     </div>
                                     <div className="mb-4 h-2 overflow-hidden rounded-full bg-muted">
@@ -1568,11 +1573,11 @@ export function PaperEditorWorkspace({
                                     </div>
                                     <div className="grid grid-cols-2 gap-3 text-sm">
                                         <div className="site-soft-panel rounded-2xl bg-background/80 p-3">
-                                            <div className="text-xs text-muted-foreground">Score</div>
+                                            <div className="text-xs text-muted-foreground">{copy.score}</div>
                                             <div className="mt-1 text-lg font-black">{intelligenceReport.preflight.score}</div>
                                         </div>
                                         <div className="site-soft-panel rounded-2xl bg-background/80 p-3">
-                                            <div className="text-xs text-muted-foreground">References</div>
+                                            <div className="text-xs text-muted-foreground">{copy.references}</div>
                                             <div className="mt-1 text-lg font-black">{intelligenceReport.bibliographyKeys.length}</div>
                                         </div>
                                     </div>
@@ -1589,13 +1594,13 @@ export function PaperEditorWorkspace({
                                         ))}
                                         {!intelligenceReport.preflight.blockers.length && !intelligenceReport.preflight.warnings.length ? (
                                             <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
-                                                No blocking publication issues detected.
+                                                {copy.noIssues}
                                             </div>
                                         ) : null}
                                     </div>
                                     <div className="mt-4 flex flex-wrap gap-2">
-                                        <button type="button" onClick={exportPreflightReport} className="site-btn px-4 text-xs">Export preflight</button>
-                                        <button type="button" onClick={() => createRevisionSnapshotFromCurrent("Checkpoint snapshot")} className="site-btn-accent px-4 text-xs">Create snapshot</button>
+                                        <button type="button" onClick={exportPreflightReport} className="site-btn px-4 text-xs">{copy.exportPreflight}</button>
+                                        <button type="button" onClick={() => createRevisionSnapshotFromCurrent("Checkpoint snapshot")} className="site-btn-accent px-4 text-xs">{copy.snapshot}</button>
                                     </div>
                                 </div>
 
@@ -1605,7 +1610,7 @@ export function PaperEditorWorkspace({
                                             <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
                                                 Citation audit
                                             </div>
-                                            <div className="mt-1 text-lg font-black">Reference integrity</div>
+                                            <div className="mt-1 text-lg font-black">{copy.referenceIntegrity}</div>
                                         </div>
                                         <BookText className="h-5 w-5 text-indigo-500" />
                                     </div>
@@ -1627,7 +1632,7 @@ export function PaperEditorWorkspace({
                                             <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
                                                 Revision compare
                                             </div>
-                                            <div className="mt-1 text-lg font-black">Snapshot review</div>
+                                            <div className="mt-1 text-lg font-black">{copy.snapshotReview}</div>
                                         </div>
                                         <RefreshCw className="h-5 w-5 text-sky-500" />
                                     </div>
@@ -1647,25 +1652,25 @@ export function PaperEditorWorkspace({
                                             {revisionComparison ? (
                                                 <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                                                     <div className="site-soft-panel rounded-2xl bg-background/80 p-3">
-                                                        <div className="text-xs text-muted-foreground">Added words</div>
+                                                        <div className="text-xs text-muted-foreground">{locale === "uz" ? "Qo‘shilgan so‘zlar" : "Added words"}</div>
                                                         <div className="mt-1 text-lg font-black">{revisionComparison.addedWords}</div>
                                                     </div>
                                                     <div className="site-soft-panel rounded-2xl bg-background/80 p-3">
-                                                        <div className="text-xs text-muted-foreground">Removed words</div>
+                                                        <div className="text-xs text-muted-foreground">{locale === "uz" ? "Olib tashlangan so‘zlar" : "Removed words"}</div>
                                                         <div className="mt-1 text-lg font-black">{revisionComparison.removedWords}</div>
                                                     </div>
                                                     <div className="site-soft-panel rounded-2xl bg-background/80 p-3">
-                                                        <div className="text-xs text-muted-foreground">Heading delta</div>
+                                                        <div className="text-xs text-muted-foreground">{locale === "uz" ? "Sarlavha farqi" : "Heading delta"}</div>
                                                         <div className="mt-1 text-lg font-black">{revisionComparison.headingDelta}</div>
                                                     </div>
                                                     <div className="site-soft-panel rounded-2xl bg-background/80 p-3">
-                                                        <div className="text-xs text-muted-foreground">Equation delta</div>
+                                                        <div className="text-xs text-muted-foreground">{locale === "uz" ? "Tenglama farqi" : "Equation delta"}</div>
                                                         <div className="mt-1 text-lg font-black">{revisionComparison.equationDelta}</div>
                                                     </div>
                                                 </div>
                                             ) : null}
                                             <div className="mt-4 flex flex-wrap gap-2">
-                                                <button type="button" onClick={() => selectedSnapshot && handleRestoreSnapshot(selectedSnapshot)} className="site-btn px-4 text-xs">Restore snapshot</button>
+                                                <button type="button" onClick={() => selectedSnapshot && handleRestoreSnapshot(selectedSnapshot)} className="site-btn px-4 text-xs">{copy.restore}</button>
                                             </div>
                                         </>
                                     ) : (
@@ -1681,7 +1686,7 @@ export function PaperEditorWorkspace({
                                             <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
                                                 Intelligence
                                             </div>
-                                            <div className="mt-1 text-lg font-black">Consistency checks</div>
+                                            <div className="mt-1 text-lg font-black">{copy.consistency}</div>
                                         </div>
                                         <Sparkles className="h-5 w-5 text-teal-500" />
                                     </div>
@@ -1717,7 +1722,7 @@ export function PaperEditorWorkspace({
                                         <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
                                             Meta
                                         </div>
-                                        <div className="mt-1 text-lg font-black">Document info</div>
+                                            <div className="mt-1 text-lg font-black">{copy.documentInfo}</div>
                                     </div>
                                     <ScanText className={`h-5 w-5 transition-transform ${showMeta ? "rotate-0" : "-rotate-90"}`} />
                                 </button>
@@ -1725,7 +1730,7 @@ export function PaperEditorWorkspace({
                                 {showMeta && (
                                     <div className="mt-4 space-y-4">
                                         <div className="rounded-2xl border border-accent/20 bg-accent/5 px-4 py-3">
-                                            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent">Scientific Objects</div>
+                                            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent">{copy.scientificObjects}</div>
                                             <div className="mt-1 text-sm font-semibold text-foreground">
                                                 {formData.scientific_object_references?.length || 0} linked source{formData.scientific_object_references?.length === 1 ? "" : "s"}
                                             </div>
@@ -1998,7 +2003,7 @@ export function PaperEditorWorkspace({
                                     <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
                                         <div className="min-w-0">
                                             <div className="site-status-pill inline-flex px-3 py-1 text-[10px] tracking-[0.16em]">
-                                                Section Editor
+                                                {copy.sectionEditor}
                                             </div>
                                             <div className="mt-1 truncate text-sm font-bold">{activeSection.title}</div>
                                         </div>
@@ -2021,7 +2026,7 @@ export function PaperEditorWorkspace({
                                         value={editorContent}
                                         onChange={(event) => setEditorContent(event.target.value)}
                                         className="min-h-full w-full flex-1 resize-none rounded-[1.35rem] border border-border/60 bg-background px-4 py-4 font-mono text-[14px] leading-7 text-foreground outline-none transition-colors focus:border-accent/30 focus:bg-background md:px-4 overflow-y-auto"
-                                        placeholder="Ilmiy maqolani yozishni boshlang... Bu yerda bo'limlar, formulalar, teoremalar va grafik bloklarini yozishingiz mumkin."
+                                        placeholder={copy.startWriting}
                                         spellCheck={false}
                                     />
                                 </div>
