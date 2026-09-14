@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Plus, Search, Trash2, X } from "lucide-react";
 
 import { AxBadge, AxButton, AxEmptyState, AxLoadingState, AxNotice } from "@/components/axion";
+import { AxionMark } from "@/components/axion";
 import { WriteTypeSelector } from "@/components/write-type-selector";
 import { fetchPublic, isExpectedBackendOfflineError } from "@/lib/api";
 import { deleteWriterPaper } from "@/lib/writer-api";
@@ -21,16 +22,6 @@ type Paper = {
 };
 
 type Filter = "all" | "draft" | "published";
-
-function WriterMark() {
-    return (
-        <svg viewBox="0 0 36 36" className="h-8 w-8 text-[var(--ax-accent)]" aria-hidden="true">
-            <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeWidth="1.05" />
-            <path d="M10 11h16M10 16h16M10 21h12M10 26h9" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.68" />
-            <path d="M23 24l4-4 2 2-4 4-3 1z" fill="currentColor" opacity="0.85" />
-        </svg>
-    );
-}
 
 export default function DocumentsPage() {
     const [projectId, setProjectId] = useState<string | null>(null);
@@ -82,7 +73,7 @@ export default function DocumentsPage() {
             <header className="ax-work-subnav sticky top-0 z-40">
                 <div className="ax-work-container flex h-16 items-center justify-between gap-5">
                     <Link href="/" className="flex min-w-0 items-center gap-3 rounded-[var(--ax-work-control-radius)] outline-none focus-visible:shadow-[var(--ax-focus-ring)]">
-                        <WriterMark />
+                        <AxionMark className="h-8 w-8 text-[var(--ax-accent)]" />
                         <span className="min-w-0 leading-none">
                             <span className="block truncate font-serif text-[19px] font-medium tracking-[-0.03em]">Axion Writer</span>
                             <span className="mt-1 block text-[8px] font-semibold uppercase tracking-[0.2em] text-[var(--ax-text-faint)]">Publication workspace</span>
