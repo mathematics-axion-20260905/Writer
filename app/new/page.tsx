@@ -60,7 +60,11 @@ function NewPaperPageContent() {
                         throw new Error("Transferred Scientific Object has no readable payload.");
                     }
                     const payload = object.revision.payload as Record<string, unknown>;
-                    const markdown = typeof payload.report_markdown === "string" ? payload.report_markdown : "";
+                    const markdown = typeof payload.presentation_markdown === "string"
+                        ? payload.presentation_markdown
+                        : typeof payload.report_markdown === "string"
+                            ? payload.report_markdown
+                            : "";
                     const summary = typeof payload.summary === "string" ? payload.summary : "";
                     const importedContent = markdown.trim() || summary.trim() || object.title;
                     const reference = {
